@@ -14,8 +14,14 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
       
+      - name: echo secret
+        run: echo "$DISCORD_TOKEN"
+      
       - name: add secrets
         run: export DISCORD_TOKEN="$DISCORD_TOKEN"
+      
+      - name: echo var
+        run: echo $DISCORD_TOKEN
 
       - name: Stop delete containers
         run: docker compose down
