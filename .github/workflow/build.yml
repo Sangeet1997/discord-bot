@@ -1,0 +1,18 @@
+name: discord-bot-builder
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  container-builder:
+    runs-on: self-hosted
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: Stop delete containers
+        run: docker compose down
+
+      - name: Start Containers
+        run: docker compose up -d --build
