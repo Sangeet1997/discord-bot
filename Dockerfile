@@ -1,8 +1,5 @@
 FROM python:3.14-slim
 
-#uv install
-
-
 WORKDIR /app
 
 COPY requirements.txt .
