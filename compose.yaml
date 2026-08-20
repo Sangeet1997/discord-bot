@@ -1,0 +1,7 @@
+name: discord-bot
+
+services:
+  discord-bot-container:
+    build: .
+    restart: unless-stopped
+  
