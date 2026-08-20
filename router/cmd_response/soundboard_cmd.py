@@ -1,3 +1,8 @@
+"""TODO: Decide how to store soundboard audio files. For now, they will be stored in the repository's soundboard directory.
+         Change command input so that bot offers a list that is clickable, instead of requiring the user to type the filename. 
+         This will require a more complex command structure, possibly using a menu or reaction-based selection."""
+
+
 from pathlib import Path
 
 import discord
