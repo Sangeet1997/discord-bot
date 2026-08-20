@@ -4,4 +4,6 @@ services:
   discord-bot-container:
     build: .
     restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN
   
