@@ -4,12 +4,18 @@ on:
   push:
     branches: [main]
 
+env:
+  DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+
 jobs:
   container-builder:
     runs-on: self-hosted
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
+      
+      - name: add secrets
+        run: exort DISCORD_TOKEN="$DISCORD_TOKEN"
 
       - name: Stop delete containers
         run: docker compose down
