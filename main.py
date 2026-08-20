@@ -20,9 +20,9 @@ async def on_ready():
 	print(f"Logged in as {bot.user} (ID: {bot.user.id})")
 	await setup_router(bot)
 
-@bot.command()
+"""@bot.command()
 async def join(ctx):
-	await join_vc(ctx)
+	await join_vc(ctx)"""
 	
 token = os.getenv("DISCORD_TOKEN")
 if not token:
