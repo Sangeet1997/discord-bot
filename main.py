@@ -9,16 +9,30 @@ from router.router import setup as setup_router
 
 dotenv.load_dotenv()
 
-intents = discord.Intents.default()
-intents.message_content = True
-intents.voice_states = True
+class myBot(commands.Bot):
+	def __init__(self):
+		intents = discord.Intents.default()
+		intents.message_content = True
+		intents.voice_states = True
 
-bot = commands.Bot(command_prefix="+", intents=intents)
+		super().__init__(command_prefix = "+", intents=intents)
+
+	async def setup_hook(self):
+		# add db connection
+		await setup_router(bot)
+		pass
+
+	async def close(self):
+		# teardown
+		# db.close()
+		await super().close()
+
+bot = myBot()
 
 @bot.event
 async def on_ready():
 	print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-	await setup_router(bot)
+	
 
 @bot.command()
 async def join(ctx):
