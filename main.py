@@ -1,13 +1,12 @@
-import os
-import dotenv
 
 import discord
 from discord.ext import commands
 
 from router.join import join_vc
 from router.router import setup as setup_router
+from config.settings import settings
 
-dotenv.load_dotenv()
+from database.db import engine
 
 class myBot(commands.Bot):
 	def __init__(self):
@@ -18,13 +17,12 @@ class myBot(commands.Bot):
 		super().__init__(command_prefix = "+", intents=intents)
 
 	async def setup_hook(self):
-		# add db connection
-		await setup_router(bot)
-		pass
+		# setup
+		await setup_router(self)
 
 	async def close(self):
 		# teardown
-		# db.close()
+		await engine.dispose()
 		await super().close()
 
 bot = myBot()
@@ -38,8 +36,6 @@ async def on_ready():
 async def join(ctx):
 	await join_vc(ctx)
 	
-token = os.getenv("DISCORD_TOKEN")
-if not token:
-	raise RuntimeError("Set the DISCORD_TOKEN environment variable before starting the bot.")
 
-bot.run(token)
+if __name__ == "__main__":
+	bot.run(settings.DISCORD_TOKEN)

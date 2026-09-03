@@ -4,7 +4,7 @@ from discord.ext import commands
 @commands.command()
 async def ping(ctx):
 	"""Check whether the bot is responding."""
-	await ctx.send("Pong!")
+	await ctx.send("Pong2!")
 
 @commands.command()
 async def ding(ctx):
