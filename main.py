@@ -8,6 +8,13 @@ from config.settings import settings
 
 from database.db import engine
 
+from logger.logger import setup_logging
+import logging
+
+setup_logging()
+
+logger = logging.getLogger(__name__)
+
 class myBot(commands.Bot):
 	def __init__(self):
 		intents = discord.Intents.default()
@@ -29,7 +36,7 @@ bot = myBot()
 
 @bot.event
 async def on_ready():
-	print(f"Logged in as {bot.user} (ID: {bot.user.id})")
+	logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
 	
 
 @bot.command()

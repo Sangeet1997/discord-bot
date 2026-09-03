@@ -18,5 +18,4 @@ async_session_factory = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
     autoflush=False,
-    autocommit=False,
 )
