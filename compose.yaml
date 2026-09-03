@@ -5,5 +5,16 @@ services:
     build: .
     restart: unless-stopped
     environment:
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_HOST
+      - MYSQL_DB
       - DISCORD_TOKEN
+    networks:
+      - shared-network
+
+
+networks:
+  shared-network:
+    name: shared-network
   
