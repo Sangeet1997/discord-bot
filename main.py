@@ -37,12 +37,6 @@ bot = myBot()
 @bot.event
 async def on_ready():
 	logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
-	
-
-@bot.command()
-async def join(ctx):
-	await join_vc(ctx)
-	
 
 if __name__ == "__main__":
 	bot.run(settings.DISCORD_TOKEN)
