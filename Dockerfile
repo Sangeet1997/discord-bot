@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# manage.py migrate runs before the main bot runs
 CMD ["sh", "-c", "python manage.py migrate && python main.py"]
