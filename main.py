@@ -27,6 +27,7 @@ class myBot(commands.Bot):
 	async def setup_hook(self):
 		# setup
 		await self.load_extension("core.user_update.vc_user_update")
+		await self.load_extension("core.slot_machine.slot_machine")
 		await setup_router(self)
 
 	async def close(self):

@@ -18,8 +18,15 @@ class Settings:
         self.DISCORD_TOKEN = get_env_vars("DISCORD_TOKEN")
         self.GUILD_ID = int(get_env_vars("GUILD_ID"))
 
-        self.USER_POINTS_INTERVAL = 5
+        # Periodic xp and points
+        self.USER_POINTS_INTERVAL = 5 # seconds
         self.INTERVAL_POINT_AMOUNT = 25
         self.INTERVAL_XP_AMOUNT = 25
+
+        # Slot machine emojis
+        self.EMOJIS = ["🖕", "😸", "🍆", "🍒", "💦"]
+        self.WIN_EMOJI = "🖕" # three of these is a win
+        self.EMPTY_SLOT = "➖"
+        
 
 settings = Settings()
