@@ -14,16 +14,18 @@ class VcUserUpdateCog(commands.Cog):
     def cog_unload(self) -> None:
         self.check_server_data.cancel()
 
+
     @tasks.loop(seconds=5)
     async def check_server_data(self):
 
-        guild = self.bot.get_guild(settings.GUILD_ID)
+        guild = self.bot.get_guild(int(settings.GUILD_ID))
 
         if not guild:
             raise ValueError(f"Guild not found; Guild id:{settings.GUILD_ID}")
             logger.error(f"Guild not found; Guild id:{settings.GUILD_ID}")
 
-        print(f"[{guild.name}] Members: {len(guild.members)}, Channels: {len(guild.channels)}")
+        print(f"[{guild.name}] Members: {guild.members}, Channels: {guild.channels}")
+
 
     @check_server_data.before_loop
     async def before_check(self):
