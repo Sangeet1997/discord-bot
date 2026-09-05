@@ -36,7 +36,7 @@ class VcUserUpdateCog(commands.Cog):
         users_data = [{"id": member.id, "name": member.name} for member in vc_members]
 
         try:
-            await bulk_add_vc_points(users_data, settings.INTERVAL_POINT_AMOUNT)
+            await bulk_add_vc_points(users_data, settings.INTERVAL_POINT_AMOUNT, settings.INTERVAL_XP_AMOUNT)
         except Exception as e:
             logger.error(f"Failed to update VC points for members: {e}", exc_info=True)
 

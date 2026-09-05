@@ -9,5 +9,6 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
-    points: Mapped[int] = mapped_column(Integer, default=0)
+    points: Mapped[int] = mapped_column(Integer, default=300)
+    xp: Mapped[int] = mapped_column(Integer, default=0)
 

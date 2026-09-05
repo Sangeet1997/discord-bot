@@ -46,7 +46,7 @@ async def increment_user_points(user_id: int, points: int):
             await session.execute(stmt)
 
 
-async def bulk_add_vc_points(user_data: list[dict], points_to_add: int):
+async def bulk_add_vc_points(user_data: list[dict], points_to_add: int, xp: int):
     """
     Inserts users if they do not exist with initial points,
     or atomically increments points if they already exist in a single query.
@@ -56,13 +56,14 @@ async def bulk_add_vc_points(user_data: list[dict], points_to_add: int):
         return
 
     values = [
-        {"id": u["id"], "name": u["name"], "points": points_to_add}
+        {"id": u["id"], "name": u["name"], "points": points_to_add, "xp": xp}
         for u in user_data
     ]
 
     stmt = insert(User).values(values)
     stmt = stmt.on_duplicate_key_update(
         points=User.points + points_to_add,
+        xp=User.xp + xp,
         name=stmt.inserted.name,
     )
 
