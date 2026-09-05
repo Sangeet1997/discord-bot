@@ -33,12 +33,32 @@ class VcUserUpdateCog(commands.Cog):
         if not vc_members:
             return
 
-        users_data = [{"id": member.id, "name": member.name} for member in vc_members]
+        half_points = settings.INTERVAL_POINT_AMOUNT // 2
+        users_data = []
+
+        for member in vc_members:
+            voice = member.voice
+            points = settings.INTERVAL_POINT_AMOUNT
+            xp = settings.INTERVAL_XP_AMOUNT
+
+            if voice:
+                if voice.self_deaf or voice.deaf:
+                    points -= half_points
+                elif voice.self_stream or voice.self_video:
+                    points += half_points
+
+            users_data.append({
+                "id": member.id,
+                "name": member.name,
+                "points": points,
+                "xp": xp,
+            })
 
         try:
-            await bulk_add_vc_points(users_data, settings.INTERVAL_POINT_AMOUNT, settings.INTERVAL_XP_AMOUNT)
+            await bulk_add_vc_points(users_data)
         except Exception as e:
             logger.error(f"Failed to update VC points for members: {e}", exc_info=True)
+
 
     @check_server_data.before_loop
     async def before_check(self):

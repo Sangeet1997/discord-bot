@@ -46,6 +46,18 @@ async def increment_user_points(user_id: int, points: int):
             await session.execute(stmt)
 
 
+async def decrement_user_points(user_id: int, points: int):
+    """Atomically decrements points for an existing user."""
+    async with async_session_factory() as session:
+        async with session.begin():
+            stmt = (
+                update(User)
+                .where(User.id == user_id)
+                .values(points=User.points - points)
+            )
+            await session.execute(stmt)
+
+
 async def increment_user_xp(user_id: int, xp: int):
     """Atomically increments xp for an existing user."""
     async with async_session_factory() as session:
@@ -58,24 +70,19 @@ async def increment_user_xp(user_id: int, xp: int):
             await session.execute(stmt)
 
 
-async def bulk_add_vc_points(user_data: list[dict], points_to_add: int, xp: int):
+async def bulk_add_vc_points(user_data: list[dict]):
     """
-    Inserts users if they do not exist with initial points,
-    or atomically increments points if they already exist in a single query.
-    user_data format: [{'id': member_id, 'name': member_name}, ...]
+    Inserts users if they do not exist with initial points/xp,
+    or atomically increments points/xp if they already exist in a single query.
+    user_data format: [{'id': member_id, 'name': member_name, 'points': int, 'xp': int}, ...]
     """
     if not user_data:
         return
 
-    values = [
-        {"id": u["id"], "name": u["name"], "points": points_to_add, "xp": xp}
-        for u in user_data
-    ]
-
-    stmt = insert(User).values(values)
+    stmt = insert(User).values(user_data)
     stmt = stmt.on_duplicate_key_update(
-        points=User.points + points_to_add,
-        xp=User.xp + xp,
+        points=User.points + stmt.inserted.points,
+        xp=User.xp + stmt.inserted.xp,
         name=stmt.inserted.name,
     )
 
