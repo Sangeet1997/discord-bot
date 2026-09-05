@@ -21,10 +21,17 @@ class VcUserUpdateCog(commands.Cog):
         guild = self.bot.get_guild(settings.GUILD_ID)
 
         if not guild:
-            raise ValueError(f"Guild not found; Guild id:{settings.GUILD_ID}")
             logger.error(f"Guild not found; Guild id:{settings.GUILD_ID}")
+            raise ValueError(f"Guild not found; Guild id:{settings.GUILD_ID}")
+            
+        vc_members = [
+            member
+            for vc in guild.voice_channels
+            for member in vc.members
+            if not member.bot  # Optional: ignore bots
+        ]
 
-        print(f"[{guild.name}] Members: {guild.members}, Channels: {guild.channels}")
+        print(vc_members)
 
 
     @check_server_data.before_loop
