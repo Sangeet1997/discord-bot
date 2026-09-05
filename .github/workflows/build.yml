@@ -10,6 +10,7 @@ env:
   MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
   MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
   MYSQL_DB: ${{ secrets.MYSQL_DB }}
+  GUILD_ID: ${{ secrets.GUILD_ID }}
 
 jobs:
   container-builder:

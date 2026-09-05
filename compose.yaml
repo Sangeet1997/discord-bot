@@ -10,6 +10,7 @@ services:
       - MYSQL_HOST
       - MYSQL_DB
       - DISCORD_TOKEN
+      - GUILD_ID
     networks:
       - shared-network
 
