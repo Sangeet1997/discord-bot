@@ -46,6 +46,18 @@ async def increment_user_points(user_id: int, points: int):
             await session.execute(stmt)
 
 
+async def increment_user_xp(user_id: int, xp: int):
+    """Atomically increments xp for an existing user."""
+    async with async_session_factory() as session:
+        async with session.begin():
+            stmt = (
+                update(User)
+                .where(User.id == user_id)
+                .values(xp=User.xp + xp)
+            )
+            await session.execute(stmt)
+
+
 async def bulk_add_vc_points(user_data: list[dict], points_to_add: int, xp: int):
     """
     Inserts users if they do not exist with initial points,
