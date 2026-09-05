@@ -18,4 +18,7 @@ class Settings:
         self.DISCORD_TOKEN = get_env_vars("DISCORD_TOKEN")
         self.GUILD_ID = int(get_env_vars("GUILD_ID"))
 
+        self.USER_POINTS_INTERVAL = 5
+        self.INTERVAL_POINT_AMOUNT = 25
+
 settings = Settings()
