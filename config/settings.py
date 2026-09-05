@@ -16,6 +16,6 @@ class Settings:
         self.MYSQL_HOST = get_env_vars("MYSQL_HOST")
         self.MYSQL_DB = get_env_vars("MYSQL_DB")
         self.DISCORD_TOKEN = get_env_vars("DISCORD_TOKEN")
-        self.GUILD_ID = get_env_vars("GUILD_ID")
+        self.GUILD_ID = int(get_env_vars("GUILD_ID"))
 
 settings = Settings()

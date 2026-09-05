@@ -18,7 +18,7 @@ class VcUserUpdateCog(commands.Cog):
     @tasks.loop(seconds=5)
     async def check_server_data(self):
 
-        guild = self.bot.get_guild(int(settings.GUILD_ID))
+        guild = self.bot.get_guild(settings.GUILD_ID)
 
         if not guild:
             raise ValueError(f"Guild not found; Guild id:{settings.GUILD_ID}")
