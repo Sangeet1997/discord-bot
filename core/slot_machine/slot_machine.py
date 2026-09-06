@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import logging
 import random
 import discord
@@ -75,6 +75,7 @@ class SlotMachineView(discord.ui.View):
             return
 
         points_after = points_before - 25 + winnings
+        pot_after = current_pot - winnings
 
         reels = [settings.EMPTY_SLOT, settings.EMPTY_SLOT, settings.EMPTY_SLOT]
 
@@ -84,6 +85,7 @@ class SlotMachineView(discord.ui.View):
                 embed = discord.Embed(title="🎰 Slot Machine", description=f"# [ {' | '.join(reels)} ]")
                 embed.add_field(name="Spinner", value=interaction.user.display_name, inline=True)
                 embed.add_field(name="Balance", value=points_after if i == 2 else points_before, inline=True)
+                embed.add_field(name="Pot", value=pot_after if i == 2 else current_pot, inline=True)
                 embed.add_field(name="Result", value=outcome if i == 2 else "Spinning...", inline=False)
 
                 if i == 0:
@@ -115,8 +117,16 @@ class SlotMachine(commands.Cog):
             except discord.HTTPException as e:
                 logger.warning(f"Failed to delete previous slot machine message: {e}")
 
+        try:
+            vault = await get_or_create_vault(settings.SLOT_MACHINE_VAULT)
+            pot_points = vault.points
+        except Exception as e:
+            logger.error(f"Failed to fetch vault: {e}", exc_info=True)
+            pot_points = 0
+
         placeholder = settings.EMPTY_SLOT
         embed = discord.Embed(title="🎰 Slot Machine", description=f"# [ {placeholder} | {placeholder} | {placeholder} ]")
+        embed.add_field(name="Pot", value=pot_points, inline=True)
         await interaction.response.send_message(embed=embed, view=SlotMachineView(self))
         self.active_message = await interaction.original_response()
 
