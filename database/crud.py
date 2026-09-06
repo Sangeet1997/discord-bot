@@ -1,7 +1,7 @@
 from sqlalchemy import select, update, delete
 from sqlalchemy.dialects.mysql import insert
 from database.db import async_session_factory
-from database.models import User
+from database.models import User, Point_Vault
 
 
 async def get_all_users():
@@ -88,6 +88,30 @@ async def bulk_add_vc_points(user_data: list[dict]):
 
     async with async_session_factory() as session:
         async with session.begin():
+            await session.execute(stmt)
+
+
+async def get_or_create_vault(vault_name: str):
+    async with async_session_factory() as session:
+        stmt = select(Point_Vault).where(Point_Vault.vault_name == vault_name)
+        result = await session.execute(stmt)
+        vault = result.scalar_one_or_none()
+        if not vault:
+            async with session.begin():
+                vault = Point_Vault(vault_name=vault_name)
+                session.add(vault)
+            await session.refresh(vault)
+        return vault
+
+
+async def update_vault(vault_name:str, points: int):
+    async with async_session_factory() as session:
+        async with session.begin():
+            stmt = (
+                update(Point_Vault)
+                .where(Point_Vault.vault_name == vault_name)
+                .values(points= Point_Vault.points + points)
+            )
             await session.execute(stmt)
 
 

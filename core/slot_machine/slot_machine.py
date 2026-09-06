@@ -6,7 +6,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from config.settings import settings
-from database.crud import get_user
+from database.crud import get_user, get_or_create_vault, update_vault
 
 class SlotMachineView(discord.ui.View):
     def __init__(self, cog):

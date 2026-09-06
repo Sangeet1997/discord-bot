@@ -27,6 +27,9 @@ class Settings:
         self.EMOJIS = ["🖕", "😸", "🍆", "🍒", "💦"]
         self.WIN_EMOJI = "🖕" # three of these is a win
         self.EMPTY_SLOT = "➖"
+
+        # slot machine vault name
+        self.SLOT_MACHINE_VAULT = "slot_machine_vault"
         
 
 settings = Settings()
