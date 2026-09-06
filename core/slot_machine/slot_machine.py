@@ -58,9 +58,9 @@ class SlotMachineView(discord.ui.View):
                     outcome = f"(3 match) You won 25% of the pot ({winnings} points)!!"
                 await increment_user_points(interaction.user.id, winnings)
                 await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
-            elif results[0] == results[1]:
+            elif results[0] == results[1] or results[1] == results[2]:
                 winnings = 25
-                outcome = "(first 2 match) Free spin! You got 25 points back"
+                outcome = "(2 match) Free spin! You got 25 points back"
                 await increment_user_points(interaction.user.id, winnings)
                 await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
             else:
