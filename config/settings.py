@@ -33,7 +33,7 @@ class Settings:
 
         # bully settings
         self.NUMBER_OF_MOVES = 10
-        self.MOVE_INTERVAL = 1 # in seconds
+        self.MOVE_INTERVAL = 0.7 # in seconds
         self.BULLY_POINTS_COST = 100
         
 
