@@ -93,14 +93,13 @@ async def bulk_add_vc_points(user_data: list[dict]):
 
 async def get_or_create_vault(vault_name: str):
     async with async_session_factory() as session:
-        stmt = select(Point_Vault).where(Point_Vault.vault_name == vault_name)
-        result = await session.execute(stmt)
-        vault = result.scalar_one_or_none()
-        if not vault:
-            async with session.begin():
+        async with session.begin():
+            stmt = select(Point_Vault).where(Point_Vault.vault_name == vault_name)
+            result = await session.execute(stmt)
+            vault = result.scalar_one_or_none()
+            if not vault:
                 vault = Point_Vault(vault_name=vault_name)
                 session.add(vault)
-            await session.refresh(vault)
         return vault
 
 

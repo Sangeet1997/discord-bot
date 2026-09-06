@@ -1,5 +1,5 @@
 ﻿import asyncio
-
+import logging
 import random
 import discord
 from discord import app_commands
@@ -7,6 +7,8 @@ from discord.ext import commands
 
 from config.settings import settings
 from database.crud import get_user, get_or_create_vault, update_vault, increment_user_points
+
+logger = logging.getLogger(__name__)
 
 class SlotMachineView(discord.ui.View):
     def __init__(self, cog):
@@ -22,7 +24,8 @@ class SlotMachineView(discord.ui.View):
 
         try:
             user = await get_user(interaction.user.id)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to fetch user {interaction.user.id}: {e}", exc_info=True)
             embed = discord.Embed(title="🎰 Slot Machine", description="Database error. Please try again later.")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
@@ -45,7 +48,6 @@ class SlotMachineView(discord.ui.View):
             await increment_user_points(interaction.user.id, -25)
             await update_vault(settings.SLOT_MACHINE_VAULT, 25)
 
-            # pot machine logic
             result_set = set(results)
             if len(result_set) == 1:
                 if settings.WIN_EMOJI in result_set:
@@ -64,7 +66,8 @@ class SlotMachineView(discord.ui.View):
             else:
                 winnings = 0
                 outcome = "No match"
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error during spin processing for user {interaction.user.id}: {e}", exc_info=True)
             self.cog.is_spinning = False
             self.cog.active_message = None
             embed = discord.Embed(title="🎰 Slot Machine", description="Database error. Please try again later.")
@@ -109,8 +112,8 @@ class SlotMachine(commands.Cog):
         if self.active_message:
             try:
                 await self.active_message.delete()
-            except discord.HTTPException:
-                pass
+            except discord.HTTPException as e:
+                logger.warning(f"Failed to delete previous slot machine message: {e}")
 
         placeholder = settings.EMPTY_SLOT
         embed = discord.Embed(title="🎰 Slot Machine", description=f"# [ {placeholder} | {placeholder} | {placeholder} ]")
