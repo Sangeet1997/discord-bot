@@ -14,21 +14,17 @@ class SlotMachineView(discord.ui.View):
 
     @discord.ui.button(label="Spin (25c)", style=discord.ButtonStyle.primary)
     async def spin(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user = await get_user(interaction.user.id)
+        if not user or user.points < 25:
+            embed = discord.Embed(title="🎰 Slot Machine", description="# 🖕 off, you are poor.\nStay in any VC to get points.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         button.disabled = True
         results = random.choices(settings.EMOJIS, k=3)
         outcome = ""
-        
-        user = await get_user(interaction.user.id)
-        if not user or user.points < 25:
-            embed = discord.Embed(title="🎰 Slot Machine", description=f"# 🖕 off, you are poor.")
-            # message: stay in any vc to get points.
-            return
-        
         points_before = user.points
 
-
-        #slot machine logic
         result_set = set(results)
         if len(result_set) == 1:
             if settings.WIN_EMOJI in result_set:
@@ -40,12 +36,7 @@ class SlotMachineView(discord.ui.View):
         else:
             outcome = "No match"
 
-        # TODO: later add the points logic
         points_after = user.points
-            
-        
-
-
 
         reels = [settings.EMPTY_SLOT, settings.EMPTY_SLOT, settings.EMPTY_SLOT]
 
@@ -59,7 +50,6 @@ class SlotMachineView(discord.ui.View):
             if i == 0:
                 await interaction.response.edit_message(embed=embed, view=self)
             else:
-                if i == 2:
                 await interaction.message.edit(embed=embed, view=self)
 
             if i < 2:
