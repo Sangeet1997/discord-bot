@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import logging
 import random
 import discord
@@ -58,9 +58,9 @@ class SlotMachineView(discord.ui.View):
                     outcome = f"(3 match) You won 25% of the pot ({winnings} points)!!"
                 await increment_user_points(interaction.user.id, winnings)
                 await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
-            elif len(result_set) == 2:
+            elif results[0] == results[1]:
                 winnings = 25
-                outcome = "(2 match) Free spin! You got 25 points back"
+                outcome = "(first 2 match) Free spin! You got 25 points back"
                 await increment_user_points(interaction.user.id, winnings)
                 await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
             else:
