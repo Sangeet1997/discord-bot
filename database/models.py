@@ -18,4 +18,5 @@ class Point_Vault(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     vault_name: Mapped[str] = mapped_column(String(150), nullable=False, unique=True)
     points: Mapped[int] = mapped_column(Integer, default=0)
+    password: Mapped[str] = mapped_column(String(25),default="password")
 

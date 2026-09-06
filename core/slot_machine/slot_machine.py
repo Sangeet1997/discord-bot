@@ -6,7 +6,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from config.settings import settings
-from database.crud import get_user, get_or_create_vault, update_vault
+from database.crud import get_user, get_or_create_vault, update_vault, increment_user_points
 
 class SlotMachineView(discord.ui.View):
     def __init__(self, cog):
@@ -35,21 +35,43 @@ class SlotMachineView(discord.ui.View):
         self.cog.is_spinning = True
         button.disabled = True
         results = random.choices(settings.EMOJIS, k=3)
+
         outcome = ""
         points_before = user.points
 
-        result_set = set(results)
-        if len(result_set) == 1:
-            if settings.WIN_EMOJI in result_set:
-                outcome = "You won the whole pot!!"
-            else:
-                outcome = "(3 match) You won 25% of the whole pot!!"
-        elif len(result_set) == 2:
-            outcome = "(2 match) Free spin you get 25c"
-        else:
-            outcome = "No match"
+        try:
+            vault = await get_or_create_vault(settings.SLOT_MACHINE_VAULT)
+            current_pot = vault.points + 25
+            await increment_user_points(interaction.user.id, -25)
+            await update_vault(settings.SLOT_MACHINE_VAULT, 25)
 
-        points_after = user.points
+            # pot machine logic
+            result_set = set(results)
+            if len(result_set) == 1:
+                if settings.WIN_EMOJI in result_set:
+                    winnings = current_pot
+                    outcome = f"You won the whole pot ({winnings} points)!!"
+                else:
+                    winnings = current_pot // 4
+                    outcome = f"(3 match) You won 25% of the pot ({winnings} points)!!"
+                await increment_user_points(interaction.user.id, winnings)
+                await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
+            elif len(result_set) == 2:
+                winnings = 25
+                outcome = "(2 match) Free spin! You got 25 points back"
+                await increment_user_points(interaction.user.id, winnings)
+                await update_vault(settings.SLOT_MACHINE_VAULT, -winnings)
+            else:
+                winnings = 0
+                outcome = "No match"
+        except Exception:
+            self.cog.is_spinning = False
+            self.cog.active_message = None
+            embed = discord.Embed(title="🎰 Slot Machine", description="Database error. Please try again later.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        points_after = points_before - 25 + winnings
 
         reels = [settings.EMPTY_SLOT, settings.EMPTY_SLOT, settings.EMPTY_SLOT]
 
