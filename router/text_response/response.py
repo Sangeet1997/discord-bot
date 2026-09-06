@@ -28,9 +28,9 @@ async def balance(ctx):
 	try:
 		user = await get_user(user_id=ctx.author.id)
 		if not user:
-			ctx.send("You do not have an entry yet, stay in any vc for sometime")
+			await ctx.send("You do not have an entry yet, stay in any vc for sometime")
 		else:
-			ctx.send(f"Balance: {user.points}c")
+			await ctx.send(f"Balance: {user.points}c")
 	except Exception as e:
 		logger.error("Error on getting balance: ", e)
 		await ctx.send("Error getting balance")
