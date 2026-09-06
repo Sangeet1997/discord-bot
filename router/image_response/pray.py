@@ -3,8 +3,6 @@ from discord.ext import commands
 
 import logging
 
-from database.crud import get_user
-
 logger = logging.getLogger(__name__)
 
 @commands.command()
@@ -24,20 +22,11 @@ async def ching(ctx):
 	await ctx.send("Chong!")
 
 @commands.command()
-async def balance(ctx):
-	try:
-		user = await get_user(user_id=ctx.author.id)
-		if not user:
-			ctx.send("You do not have an entry yet, stay in any vc for sometime")
-		else:
-			ctx.send(f"Balance: {user.points}c")
-	except Exception as e:
-		logger.error("Error on getting balance: ", e)
-		await ctx.send("Error getting balance")
+async def ching(ctx):
+	"""Check whether the bot is responding."""
+	await ctx.send("Chong!")
 
 async def setup(bot):
     bot.add_command(ping)
     bot.add_command(ding)
     bot.add_command(ching)
-    bot.add_command(balance)
-

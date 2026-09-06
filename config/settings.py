@@ -19,7 +19,7 @@ class Settings:
         self.GUILD_ID = int(get_env_vars("GUILD_ID"))
 
         # Periodic xp and points
-        self.USER_POINTS_INTERVAL = 5 # seconds
+        self.USER_POINTS_INTERVAL = 300 # seconds
         self.INTERVAL_POINT_AMOUNT = 25
         self.INTERVAL_XP_AMOUNT = 25
         self.DEAFENED_INTERVAL_POINT_AMOUNT = 4

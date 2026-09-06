@@ -31,7 +31,7 @@ class SlotMachineView(discord.ui.View):
             return
 
         if not user or user.points < 25:
-            embed = discord.Embed(title="🎰 Slot Machine", description="# 🖕 off, you are poor.\nStay in any VC to get points.")
+            embed = discord.Embed(title="🎰 Slot Machine", description="# 🖕 off, you are poor.\nStay in any VC to get coins(c).")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
