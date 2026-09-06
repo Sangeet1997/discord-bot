@@ -30,6 +30,11 @@ class Settings:
 
         # slot machine vault name
         self.SLOT_MACHINE_VAULT = "slot_machine_vault"
+
+        # bully settings
+        self.NUMBER_OF_MOVES = 10
+        self.MOVE_INTERVAL = 1 # in seconds
+        self.BULLY_POINTS_COST = 100
         
 
 settings = Settings()
