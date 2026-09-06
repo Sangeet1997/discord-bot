@@ -43,7 +43,7 @@ class VcUserUpdateCog(commands.Cog):
 
             if voice:
                 if voice.self_deaf or voice.deaf:
-                    points -= half_points
+                    points = settings.DEAFENED_INTERVAL_POINT_AMOUNT
                 elif voice.self_stream or voice.self_video:
                     points += half_points
 

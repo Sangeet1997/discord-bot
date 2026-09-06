@@ -22,6 +22,7 @@ class Settings:
         self.USER_POINTS_INTERVAL = 5 # seconds
         self.INTERVAL_POINT_AMOUNT = 25
         self.INTERVAL_XP_AMOUNT = 25
+        self.DEAFENED_INTERVAL_POINT_AMOUNT = 4
 
         # Slot machine emojis
         self.EMOJIS = ["🖕", "😸", "🍆", "🍒", "💦"]
