@@ -72,16 +72,27 @@ async def increment_user_xp(user_id: int, xp: int):
 
 async def bulk_add_vc_points(user_data: list[dict]):
     """
-    Inserts users if they do not exist with initial points/xp,
+    Inserts users if they do not exist with initial points (default 300 + given amount) and xp,
     or atomically increments points/xp if they already exist in a single query.
     user_data format: [{'id': member_id, 'name': member_name, 'points': int, 'xp': int}, ...]
     """
     if not user_data:
         return
 
-    stmt = insert(User).values(user_data)
+    default_points = User.__table__.c.points.default.arg if User.__table__.c.points.default is not None else 300
+
+    # Ensure new users receive the base default points + the earned amount
+    formatted_data = [
+        {
+            **data,
+            "points": data["points"] + default_points,
+        }
+        for data in user_data
+    ]
+
+    stmt = insert(User).values(formatted_data)
     stmt = stmt.on_duplicate_key_update(
-        points=User.points + stmt.inserted.points,
+        points=User.points + stmt.inserted.points - default_points,
         xp=User.xp + stmt.inserted.xp,
         name=stmt.inserted.name,
     )
