@@ -53,7 +53,7 @@ class BullyCog(commands.Cog):
         if not author_user or author_user.points < cost:
             await ctx.send(
                 f"🖕 off, you are poor.! You need {cost}c.\n"
-                "Stay in any VC to get coins(c), or play slot_machine (with `/slots`) to try your luck!"
+                "Stay in any VC to get coins(c), or play slot_machine (with `+slots`) to try your luck!"
             )
             return
 

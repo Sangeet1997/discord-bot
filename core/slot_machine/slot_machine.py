@@ -1,8 +1,7 @@
-﻿import asyncio
+import asyncio
 import logging
 import random
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from config.settings import settings
@@ -105,10 +104,10 @@ class SlotMachine(commands.Cog):
         self.active_message = None
         self.is_spinning = False
 
-    @app_commands.command(name="slots", description="Play slot machine")
-    async def slots(self, interaction: discord.Interaction):
+    @commands.command(name="slots", description="Play slot machine")
+    async def slots(self, ctx: commands.Context):
         if self.is_spinning:
-            await interaction.response.send_message("A slot machine is currently spinning!", ephemeral=True)
+            await ctx.send("A slot machine is currently spinning!")
             return
 
         if self.active_message:
@@ -127,8 +126,7 @@ class SlotMachine(commands.Cog):
         placeholder = settings.EMPTY_SLOT
         embed = discord.Embed(title="🎰 Slot Machine", description=f"# [ {placeholder} | {placeholder} | {placeholder} ]")
         embed.add_field(name="Pot", value=pot_points, inline=True)
-        await interaction.response.send_message(embed=embed, view=SlotMachineView(self))
-        self.active_message = await interaction.original_response()
+        self.active_message = await ctx.send(embed=embed, view=SlotMachineView(self))
 
 async def setup(bot):
     await bot.add_cog(SlotMachine(bot))
