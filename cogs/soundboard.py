@@ -367,7 +367,7 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
             embed.add_field(name="Play a sound", value="`+sb <name>` or `+sb play <name>`", inline=False)
             embed.add_field(
                 name="Add a sound",
-                value="`+sb add <name>` *(attach audio, max 6s, max 5MB; no spaces, use `-` or `_`)*",
+                value="`+sb add <name>` *(attach audio, max 10s, max 5MB; no spaces, use `-` or `_`)*",
                 inline=False,
             )
             embed.add_field(name="List sounds", value="`+sb list [page]`", inline=False)
@@ -379,7 +379,7 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
         """Explicit command to play a sound: +sb play <name>"""
         await self._play_sound_helper(ctx, name)
 
-    @soundboard.command(name="add", description="Add a new sound file (attach audio, max 6s, max 5MB).")
+    @soundboard.command(name="add", description="Add a new sound file (attach audio, max 10s, max 5MB).")
     async def add(self, ctx: commands.Context, *, name: str):
         """Upload a new sound clip with a custom name."""
         try:
@@ -426,7 +426,7 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
                 await ctx.send("⚠️ Failed to download the attachment. Please try again.")
                 return
 
-            # 6. Probe audio for playable format & duration <= 6.0s
+            # 6. Probe audio for playable format & duration <= 10.0s
             is_valid_audio, duration, probe_err = await probe_audio(temp_path)
             if not is_valid_audio:
                 if temp_path.exists():

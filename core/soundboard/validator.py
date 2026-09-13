@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Sound constraints
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
-MAX_DURATION_SECONDS = 6.0
+MAX_DURATION_SECONDS = 10.0
 NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{2,32}$")
 RESERVED_NAMES = {"add", "play", "list", "all", "help", "info", "delete", "remove"}
 
@@ -77,7 +77,7 @@ async def probe_audio(file_path: Path) -> tuple[bool, float, str]:
     """
     Inspects an audio file using ffprobe to confirm:
     1. The file is a valid audio format recognized and playable by FFmpeg.
-    2. The clip duration is within MAX_DURATION_SECONDS (6.0s).
+    2. The clip duration is within MAX_DURATION_SECONDS (10.0s).
 
     Returns:
         (is_valid, duration_in_seconds, error_message)
