@@ -29,6 +29,7 @@ class myBot(commands.Bot):
 		await self.load_extension("core.user_update.vc_user_update")
 		await self.load_extension("core.slot_machine.slot_machine")
 		await self.load_extension("core.bully.bully_command")
+		await self.load_extension("core.leaderboard.leaderboard")
 		await setup_router(self)
 
 	async def close(self):

@@ -44,6 +44,7 @@ async def info(ctx):
         color=discord.Color.blue(),
     )
     embed.add_field(name="+balance", value="Check your coin balance.", inline=False)
+    embed.add_field(name="+leaderboard [page]", value="View points leaderboard (aliases: +top, +lb).", inline=False)
     embed.add_field(name="/slots", value="Spin the slot machine for 25c to win the pot.", inline=False)
     embed.add_field(name="+bully @member", value="Move a member between random VCs (costs 100c).", inline=False)
     embed.add_field(name="+ping", value="Check bot responsiveness (Pong!).", inline=False)

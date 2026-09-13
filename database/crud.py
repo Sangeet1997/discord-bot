@@ -1,11 +1,31 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, desc, func
 from sqlalchemy.dialects.mysql import insert
 from database.db import async_session_factory
 from database.models import User, Point_Vault
 
 
-async def get_all_users():
-    pass
+async def get_all_users_by_point(page_number: int = 1):
+    async with async_session_factory() as session:
+        ITEMS_PER_PAGE = 10
+        page = max(1, page_number)
+        page_offset = (page - 1) * ITEMS_PER_PAGE
+
+        stmt = (
+            select(User)
+            .order_by(desc(User.points))
+            .limit(ITEMS_PER_PAGE)
+            .offset(page_offset)
+        )
+
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+
+async def get_total_users_count() -> int:
+    async with async_session_factory() as session:
+        stmt = select(func.count(User.id))
+        result = await session.execute(stmt)
+        return result.scalar() or 0
 
 async def get_user(user_id: int):
     async with async_session_factory() as session:
