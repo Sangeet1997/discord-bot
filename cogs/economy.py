@@ -5,46 +5,12 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from database.crud import get_all_users_by_point, get_total_users_count
+from database.crud import get_user, get_all_users_by_point, get_total_users_count
+from core.leaderboard.formatter import build_leaderboard_embed, ITEMS_PER_PAGE
 
 logger = logging.getLogger(__name__)
 
-ITEMS_PER_PAGE = 10
-
-
-def build_leaderboard_embed(
-    users: list,
-    page: int,
-    total_pages: int,
-    total_count: int,
-) -> discord.Embed:
-    """Constructs a formatted Discord Embed displaying the top users for the given page as a table."""
-    embed = discord.Embed(
-        title="🏆 Points Leaderboard",
-        color=discord.Color.gold(),
-    )
-
-    if not users:
-        embed.description = "```\nNo users found on the leaderboard.\n```"
-    else:
-        start_rank = (page - 1) * ITEMS_PER_PAGE + 1
-        header = f"{'#':<4} {'User':<16} {'Points':>9} {'XP':>9}"
-        separator = "-" * len(header)
-        rows = [header, separator]
-
-        for idx, user in enumerate(users):
-            rank = start_rank + idx
-            name = user.name or "Unknown"
-            if len(name) > 16:
-                name = name[:14] + ".."
-            points = user.points or 0
-            xp = user.xp or 0
-            rows.append(f"{rank:<4} {name:<16} {points:>9,} {xp:>9,}")
-
-        embed.description = f"```\n{'\n'.join(rows)}\n```"
-
-    embed.set_footer(text=f"Page {page} of {total_pages} • {total_count} total members")
-    return embed
+DEFAULT_ERROR_MESSAGE = "⚠️ An unexpected error occurred while processing your request. Please try again later."
 
 
 class LeaderboardView(discord.ui.View):
@@ -110,9 +76,14 @@ class LeaderboardView(discord.ui.View):
             await interaction.response.edit_message(embed=embed, view=self)
         except Exception as e:
             logger.error(f"Error changing leaderboard page to {self.current_page}: {e}", exc_info=True)
-            await interaction.response.send_message(
-                "Failed to load page. Please try again later.", ephemeral=True
-            )
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "⚠️ Failed to load page. Please try again later.", ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    "⚠️ Failed to load page. Please try again later.", ephemeral=True
+                )
 
     async def on_timeout(self):
         """Disable buttons once interaction window expires."""
@@ -122,13 +93,27 @@ class LeaderboardView(discord.ui.View):
         if self.message:
             try:
                 await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
+            except (discord.NotFound, discord.HTTPException) as e:
+                logger.debug(f"Could not edit timed-out leaderboard message: {e}")
 
 
-class LeaderboardCog(commands.Cog):
+class EconomyCog(commands.Cog, name="Economy"):
+    """Economy commands including balance checks and leaderboards."""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    @commands.command(name="balance", description="Check your current coin balance.")
+    async def balance(self, ctx: commands.Context):
+        try:
+            user = await get_user(user_id=ctx.author.id)
+            if not user:
+                await ctx.send("You do not have an entry yet, stay in any vc for sometime")
+            else:
+                await ctx.send(f"Balance: {user.points}c")
+        except Exception as e:
+            logger.error(f"Error fetching balance for user {ctx.author.id}: {e}", exc_info=True)
+            await ctx.send("⚠️ Error getting balance. Please try again later.")
 
     @commands.hybrid_command(
         name="leaderboard",
@@ -137,9 +122,7 @@ class LeaderboardCog(commands.Cog):
     )
     @app_commands.describe(page="The page number to view (defaults to 1)")
     async def leaderboard(self, ctx: commands.Context, page: int = 1):
-        logger.info(
-            f"Leaderboard command invoked by {ctx.author} (ID: {ctx.author.id}) for page {page}"
-        )
+        logger.info(f"Leaderboard command invoked by {ctx.author} (ID: {ctx.author.id}) for page {page}")
 
         try:
             total_users = await get_total_users_count()
@@ -165,9 +148,9 @@ class LeaderboardCog(commands.Cog):
             view.message = msg
         except Exception as e:
             logger.error(f"Failed to fetch leaderboard: {e}", exc_info=True)
-            await ctx.send("Database error while fetching leaderboard. Please try again later.")
+            await ctx.send("⚠️ Database error while fetching leaderboard. Please try again later.")
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(LeaderboardCog(bot))
+    await bot.add_cog(EconomyCog(bot))
 
