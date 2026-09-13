@@ -21,12 +21,203 @@ from database.crud import (
     get_sound,
     increment_sound_times_played,
 )
+from core.soundboard.formatter import ITEMS_PER_PAGE, build_soundboard_embed
 
 logger = logging.getLogger(__name__)
 
 SOUNDBOARD_DIR = Path(__file__).resolve().parents[1] / "assets" / "soundboard_files"
 DEFAULT_ERROR_MESSAGE = "⚠️ An unexpected error occurred while processing your request. Please try again later."
 VC_INACTIVITY_TIMEOUT = 180  # Disconnect after 3 minutes of idle inactivity
+
+
+class SoundSelect(discord.ui.Select):
+    """Dropdown menu enabling users to play any sound on the current page directly."""
+
+    def __init__(self, sounds: list):
+        options = [
+            discord.SelectOption(
+                label=s.name,
+                value=s.name,
+            )
+            for s in sounds
+        ]
+        super().__init__(
+            placeholder="Select a sound to play in your voice channel...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+            custom_id="sb_play_select",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        voice_state = getattr(interaction.user, "voice", None)
+        if not voice_state or not voice_state.channel:
+            await interaction.response.send_message(
+                "You must be connected to a voice channel to play a sound.", ephemeral=True
+            )
+            return
+
+        selected_sound = self.values[0]
+        view: "SoundboardPaginationView" = self.view
+        success, err_msg, sound = await view.cog._execute_play(
+            guild=interaction.guild,
+            voice_channel=voice_state.channel,
+            sound_name=selected_sound,
+        )
+        if not success:
+            await interaction.response.send_message(f"⚠️ {err_msg}", ephemeral=True)
+            return
+
+        # Spawn the small embed with the Replay button
+        embed = discord.Embed(
+            description=f"Playing `{sound.name}` ({sound.duration:.2f}s)",
+            color=discord.Color.blue(),
+        )
+        replay_view = SoundReplayView(view.cog, sound.name)
+        await interaction.response.send_message(embed=embed, view=replay_view)
+        replay_view.message = await interaction.original_response()
+
+
+class SoundboardPaginationView(discord.ui.View):
+    """Interactive pagination controls and play dropdown for browsing the soundboard table."""
+
+    def __init__(
+        self,
+        cog: "SoundboardCog",
+        author_id: int,
+        current_page: int,
+        total_pages: int,
+        total_count: int,
+        current_sounds: list,
+    ):
+        super().__init__(timeout=180.0)
+        self.cog = cog
+        self.author_id = author_id
+        self.current_page = current_page
+        self.total_pages = total_pages
+        self.total_count = total_count
+        self.message: Optional[discord.Message] = None
+
+        # Add select menu on top row to play sounds directly
+        self.sound_select = SoundSelect(current_sounds)
+        self.add_item(self.sound_select)
+
+        self._sync_buttons()
+
+    def _sync_buttons(self):
+        """Enable or disable Previous/Next buttons based on current page position."""
+        self.prev_button.disabled = self.current_page <= 1
+        self.next_button.disabled = self.current_page >= self.total_pages
+
+    @discord.ui.button(label="◀ Previous", style=discord.ButtonStyle.primary, custom_id="sb_prev", row=1)
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "Only the person who ran this command can change pages.", ephemeral=True
+            )
+            return
+
+        if self.current_page > 1:
+            self.current_page -= 1
+            await self._change_page(interaction)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="Next ▶", style=discord.ButtonStyle.primary, custom_id="sb_next", row=1)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "Only the person who ran this command can change pages.", ephemeral=True
+            )
+            return
+
+        if self.current_page < self.total_pages:
+            self.current_page += 1
+            await self._change_page(interaction)
+        else:
+            await interaction.response.defer()
+
+    async def _change_page(self, interaction: discord.Interaction):
+        try:
+            sounds, total_count = await get_all_sounds(
+                page=self.current_page, page_size=ITEMS_PER_PAGE
+            )
+            self.total_count = total_count
+            self.total_pages = max(1, math.ceil(total_count / ITEMS_PER_PAGE))
+            self._sync_buttons()
+
+            # Update dropdown menu options to match the new page's sounds
+            self.sound_select.options = [
+                discord.SelectOption(
+                    label=s.name,
+                    value=s.name,
+                )
+                for s in sounds
+            ]
+
+            embed = build_soundboard_embed(
+                sounds=sounds,
+                page=self.current_page,
+                total_pages=self.total_pages,
+                total_count=self.total_count,
+            )
+            await interaction.response.edit_message(embed=embed, view=self)
+        except Exception as e:
+            logger.error(f"Error during soundboard page change: {e}", exc_info=True)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
+
+    async def on_timeout(self) -> None:
+        """Disable buttons and dropdown when the view times out."""
+        for item in self.children:
+            if isinstance(item, (discord.ui.Button, discord.ui.Select)):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
+
+class SoundReplayView(discord.ui.View):
+    """Interactive view providing a Replay button for a played sound."""
+
+    def __init__(self, cog: "SoundboardCog", sound_name: str, timeout: float = 300.0):
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.sound_name = sound_name
+        self.message: Optional[discord.Message] = None
+
+    @discord.ui.button(label="Replay", style=discord.ButtonStyle.secondary, custom_id="sb_replay_btn")
+    async def replay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        voice_state = getattr(interaction.user, "voice", None)
+        if not voice_state or not voice_state.channel:
+            await interaction.response.send_message(
+                "You must be connected to a voice channel to replay this sound.", ephemeral=True
+            )
+            return
+
+        # Silently acknowledge so no new embed or message is created
+        await interaction.response.defer()
+
+        success, err_msg, _ = await self.cog._execute_play(
+            guild=interaction.guild,
+            voice_channel=voice_state.channel,
+            sound_name=self.sound_name,
+        )
+        if not success:
+            await interaction.followup.send(f"⚠️ {err_msg}", ephemeral=True)
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
 
 class SoundboardCog(commands.Cog, name="Soundboard"):
@@ -84,66 +275,83 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
         except Exception as e:
             logger.error(f"Error handling voice state update in soundboard cog: {e}", exc_info=True)
 
-    async def _play_sound_helper(self, ctx: commands.Context, sound_name: str):
-        """Internal helper to connect to VC and play a sound."""
-        if not ctx.author.voice or not ctx.author.voice.channel:
-            await ctx.send("⚠️ You must be connected to a voice channel to play a sound!")
-            return
-
+    async def _execute_play(
+        self,
+        guild: discord.Guild,
+        voice_channel: discord.VoiceChannel | discord.StageChannel,
+        sound_name: str,
+    ) -> tuple[bool, str, Optional[Any]]:
+        """Core audio execution worker used by commands and interaction buttons."""
         sound = await get_sound(sound_name)
         if not sound:
-            await ctx.send(f"⚠️ Sound `{sound_name}` not found. Use `+sb list` to view available sounds.")
-            return
+            return False, f"Sound `{sound_name}` not found. Use `+sb list` to view available sounds.", None
 
         sound_path = SOUNDBOARD_DIR / sound.local_file_name
         if not sound_path.exists():
             logger.error(f"Sound file missing on disk: {sound_path} for sound '{sound.name}'")
-            await ctx.send("⚠️ Audio file is missing from local storage. Please notify an administrator.")
-            return
+            return False, "Audio file is missing from local storage. Please notify an administrator.", None
 
-        target_channel = ctx.author.voice.channel
-        voice_client: Optional[discord.VoiceClient] = ctx.voice_client
+        voice_client: Optional[discord.VoiceClient] = guild.voice_client
 
         try:
             if not voice_client or not voice_client.is_connected():
-                voice_client = await target_channel.connect(timeout=10.0)
-            elif voice_client.channel != target_channel:
-                await voice_client.move_to(target_channel)
+                voice_client = await voice_channel.connect(timeout=10.0)
+            elif voice_client.channel != voice_channel:
+                await voice_client.move_to(voice_channel)
         except discord.Forbidden:
-            await ctx.send("⚠️ Bot lacks permission to join or speak in that voice channel.")
-            return
+            return False, "Bot lacks permission to join or speak in that voice channel.", None
         except asyncio.TimeoutError:
-            await ctx.send("⚠️ Failed to connect to the voice channel (connection timed out).")
-            return
+            return False, "Failed to connect to the voice channel (connection timed out).", None
         except Exception as e:
             logger.error(f"Error connecting to voice channel: {e}", exc_info=True)
-            await ctx.send(DEFAULT_ERROR_MESSAGE)
-            return
+            return False, DEFAULT_ERROR_MESSAGE, None
 
+        # If a sound is already playing, cut it off and play the new sound immediately
         if voice_client.is_playing():
-            await ctx.send("⚠️ Another sound is currently playing. Please wait a moment.")
-            return
+            voice_client.stop()
 
-        self._cancel_disconnect_timer(ctx.guild.id)
+        self._cancel_disconnect_timer(guild.id)
 
         def after_playing(error):
             if error:
                 logger.error(f"Error during audio playback for '{sound.name}': {error}", exc_info=error)
-            self._start_disconnect_timer(ctx.guild)
+            # Only start disconnect timer if a new sound hasn't already started playing
+            vc = guild.voice_client
+            if vc and not vc.is_playing():
+                self._start_disconnect_timer(guild)
 
         try:
             audio_source = discord.FFmpegPCMAudio(str(sound_path))
             voice_client.play(audio_source, after=after_playing)
             await increment_sound_times_played(sound.id)
-
-            try:
-                await ctx.message.add_reaction("🔊")
-            except Exception:
-                await ctx.send(f"🔊 Playing **{sound.name}**")
+            return True, "", sound
         except Exception as e:
             logger.error(f"Failed to play audio source '{sound_path}': {e}", exc_info=True)
-            self._start_disconnect_timer(ctx.guild)
-            await ctx.send(DEFAULT_ERROR_MESSAGE)
+            self._start_disconnect_timer(guild)
+            return False, DEFAULT_ERROR_MESSAGE, None
+
+    async def _play_sound_helper(self, ctx: commands.Context, sound_name: str):
+        """Internal helper to connect to VC, play a sound, and attach a Replay button."""
+        if not ctx.author.voice or not ctx.author.voice.channel:
+            await ctx.send("⚠️ You must be connected to a voice channel to play a sound!")
+            return
+
+        success, err_msg, sound = await self._execute_play(
+            guild=ctx.guild,
+            voice_channel=ctx.author.voice.channel,
+            sound_name=sound_name,
+        )
+        if not success:
+            await ctx.send(f"⚠️ {err_msg}")
+            return
+
+        embed = discord.Embed(
+            description=f"Playing `{sound.name}` ({sound.duration:.2f}s)",
+            color=discord.Color.blue(),
+        )
+        view = SoundReplayView(self, sound.name)
+        message = await ctx.send(embed=embed, view=view)
+        view.message = message
 
     @commands.group(name="soundboard", aliases=["sb"], invoke_without_command=True)
     async def soundboard(self, ctx: commands.Context, *, sound_name: Optional[str] = None):
@@ -157,7 +365,11 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
                 color=discord.Color.blue(),
             )
             embed.add_field(name="Play a sound", value="`+sb <name>` or `+sb play <name>`", inline=False)
-            embed.add_field(name="Add a sound", value="`+sb add <name>` *(attach audio file, max 6s, max 5MB)*", inline=False)
+            embed.add_field(
+                name="Add a sound",
+                value="`+sb add <name>` *(attach audio, max 6s, max 5MB; no spaces, use `-` or `_`)*",
+                inline=False,
+            )
             embed.add_field(name="List sounds", value="`+sb list [page]`", inline=False)
             embed.add_field(name="Sound details", value="`+sb info <name>`", inline=False)
             await ctx.send(embed=embed)
@@ -168,7 +380,7 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
         await self._play_sound_helper(ctx, name)
 
     @soundboard.command(name="add", description="Add a new sound file (attach audio, max 6s, max 5MB).")
-    async def add(self, ctx: commands.Context, name: str):
+    async def add(self, ctx: commands.Context, *, name: str):
         """Upload a new sound clip with a custom name."""
         try:
             # 1. Validate sound name format
@@ -269,36 +481,37 @@ class SoundboardCog(commands.Cog, name="Soundboard"):
 
     @soundboard.command(name="list", aliases=["all"], description="List all available sounds on the soundboard.")
     async def list_sounds(self, ctx: commands.Context, page: int = 1):
-        """List sounds with pagination."""
+        """List sounds in table format with pagination and forward/backward buttons."""
         try:
-            PAGE_SIZE = 10
             page = max(1, page)
-            sounds, total_count = await get_all_sounds(page=page, page_size=PAGE_SIZE)
+            sounds, total_count = await get_all_sounds(page=page, page_size=ITEMS_PER_PAGE)
 
             if total_count == 0:
-                await ctx.send("The soundboard is currently empty! Use `+sb add <name>` with an attached audio file to add one.")
+                await ctx.send("The soundboard is currently empty. Use `+sb add <name>` with an attached audio file to add one.")
                 return
 
-            total_pages = max(1, math.ceil(total_count / PAGE_SIZE))
+            total_pages = max(1, math.ceil(total_count / ITEMS_PER_PAGE))
             if page > total_pages:
-                await ctx.send(f"⚠️ Page {page} does not exist. Total pages: {total_pages}.")
-                return
+                page = total_pages
+                sounds, total_count = await get_all_sounds(page=page, page_size=ITEMS_PER_PAGE)
 
-            embed = discord.Embed(
-                title="🔊 Soundboard Library",
-                description=f"Use `+sb <name>` in any text channel while connected to voice to play a sound.\nTotal sounds: **{total_count}**",
-                color=discord.Color.blue(),
+            embed = build_soundboard_embed(
+                sounds=sounds,
+                page=page,
+                total_pages=total_pages,
+                total_count=total_count,
             )
 
-            for s in sounds:
-                embed.add_field(
-                    name=f"🎵 {s.name}",
-                    value=f"⏱️ `{s.duration:.2f}s` | 🎧 Played `{s.times_played}` times | By `{s.uploader_name}`",
-                    inline=False,
-                )
-
-            embed.set_footer(text=f"Page {page} of {total_pages} • Use +sb list <page> to view more")
-            await ctx.send(embed=embed)
+            view = SoundboardPaginationView(
+                cog=self,
+                author_id=ctx.author.id,
+                current_page=page,
+                total_pages=total_pages,
+                total_count=total_count,
+                current_sounds=sounds,
+            )
+            message = await ctx.send(embed=embed, view=view)
+            view.message = message
 
         except Exception as e:
             logger.error(f"Error in soundboard list command: {e}", exc_info=True)

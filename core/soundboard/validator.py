@@ -26,10 +26,23 @@ def validate_sound_name(name: str) -> tuple[bool, str]:
     if clean_name.lower() in RESERVED_NAMES:
         return False, f"`{clean_name}` is a reserved subcommand keyword. Please choose another name."
 
+    if " " in clean_name:
+        suggested = clean_name.replace(" ", "_").lower()
+        return (
+            False,
+            f"Spaces are not allowed in sound names. Please use '-' or '_' instead (e.g. `{suggested}`).",
+        )
+
+    if len(clean_name) < 2 or len(clean_name) > 32:
+        return (
+            False,
+            f"Sound name must be between 2 and 32 characters (got {len(clean_name)}).",
+        )
+
     if not NAME_PATTERN.match(clean_name):
         return (
             False,
-            "Sound name must be between 2 and 32 characters and only contain letters, numbers, underscores, or hyphens.",
+            "Sound names can only contain letters, numbers, underscores (_), or hyphens (-). Spaces and special characters are not allowed.",
         )
 
     return True, ""

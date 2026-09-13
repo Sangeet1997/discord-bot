@@ -58,7 +58,7 @@ class GeneralCog(commands.Cog, name="General"):
             embed.add_field(name="+pray", value="Receive a daily blessing of 5c and an image.", inline=False)
             embed.add_field(name="+ping", value="Check bot responsiveness (Pong!).", inline=False)
             embed.add_field(name="+sb <name>", value="Play a soundboard clip (aliases: +sb play, +sound).", inline=False)
-            embed.add_field(name="+sb add <name>", value="Upload an audio clip (attach file, max 6s, max 5MB).", inline=False)
+            embed.add_field(name="+sb add <name>", value="Upload an audio clip (attach file, max 6s, max 5MB; no spaces, use `-` or `_`).", inline=False)
             embed.add_field(name="+sb list", value="List all available sound clips.", inline=False)
             embed.add_field(name="🎙️ VC Rewards", value="Stay in voice channels to passively earn coins & XP.", inline=False)
             await ctx.send(embed=embed)
