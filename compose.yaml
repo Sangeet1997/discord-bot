@@ -11,6 +11,8 @@ services:
       - MYSQL_DB
       - DISCORD_TOKEN
       - GUILD_ID
+    volumes:
+      - ./assets/soundboard_files:/app/assets/soundboard_files
     networks:
       - shared-network
 

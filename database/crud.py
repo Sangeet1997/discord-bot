@@ -1,7 +1,7 @@
 from sqlalchemy import select, update, delete, desc, func
 from sqlalchemy.dialects.mysql import insert
 from database.db import async_session_factory
-from database.models import User, Point_Vault
+from database.models import User, Point_Vault, Soundboard
 
 
 async def get_all_users_by_point(page_number: int = 1):
@@ -147,3 +147,66 @@ async def update_vault(vault_name:str, points: int):
 
 async def delete_user():
     pass
+
+
+async def get_sound(name: str):
+    """Retrieve a sound record by unique name."""
+    async with async_session_factory() as session:
+        stmt = select(Soundboard).where(Soundboard.name == name.strip().lower())
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_all_sounds(page: int = 1, page_size: int = 10):
+    """Retrieve paginated soundboard items along with total count."""
+    async with async_session_factory() as session:
+        count_stmt = select(func.count(Soundboard.id))
+        total_result = await session.execute(count_stmt)
+        total_count = total_result.scalar() or 0
+
+        offset = max(0, (page - 1) * page_size)
+        stmt = (
+            select(Soundboard)
+            .order_by(Soundboard.name.asc())
+            .limit(page_size)
+            .offset(offset)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all()), total_count
+
+
+async def add_sound(
+    name: str,
+    uploader: int,
+    uploader_name: str,
+    local_file_name: str,
+    duration: float,
+    file_size: int,
+):
+    """Create a new soundboard entry."""
+    async with async_session_factory() as session:
+        async with session.begin():
+            sound = Soundboard(
+                name=name.strip().lower(),
+                uploader=uploader,
+                uploader_name=uploader_name,
+                local_file_name=local_file_name,
+                duration=round(duration, 2),
+                file_size=file_size,
+                times_played=0,
+            )
+            session.add(sound)
+        await session.refresh(sound)
+        return sound
+
+
+async def increment_sound_times_played(sound_id: int):
+    """Atomically increment times_played for a sound."""
+    async with async_session_factory() as session:
+        async with session.begin():
+            stmt = (
+                update(Soundboard)
+                .where(Soundboard.id == sound_id)
+                .values(times_played=Soundboard.times_played + 1)
+            )
+            await session.execute(stmt)
